@@ -2,7 +2,7 @@
 
 ![image](images/image.png)
 
-[YSMParser](https://github.com/OpenYSM/YSMParser) GUI
+[YSMParser](https://github.com/OpenYSM/YSMParser) GUI，所有解析都在你的浏览器里完成，不上传任何文件。
 
 在线使用：https://www.ysm.rip/parser/app
 
