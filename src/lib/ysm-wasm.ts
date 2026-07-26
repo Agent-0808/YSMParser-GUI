@@ -132,9 +132,19 @@ async function downloadTarWithProgress(
   onProgress: (loaded: number, total: number | undefined) => void,
   signal?: AbortSignal,
 ): Promise<ArrayBuffer> {
-  const res = await fetch(`/api/ysm-wasm?tag=${encodeURIComponent(tag)}`, {
-    signal,
-  });
+  // 直接从 GitHub Releases 下载（支持 CORS）
+  const releaseRes = await fetch(
+    `https://api.github.com/repos/${REPO}/releases/tags/${encodeURIComponent(tag)}`,
+    { signal, headers: { Accept: "application/vnd.github+json" } },
+  );
+  if (!releaseRes.ok) {
+    throw new Error(`获取发布信息失败 (HTTP ${releaseRes.status})`);
+  }
+  const release = (await releaseRes.json()) as { assets?: { name: string; browser_download_url: string }[] };
+  const asset = release.assets?.find((a) => /wasm-web.*\.tar\.gz$/.test(a.name));
+  if (!asset) throw new Error("未找到 wasm-web 资源");
+
+  const res = await fetch(asset.browser_download_url, { signal, redirect: "follow" });
   if (!res.ok || !res.body) {
     throw new Error(`下载失败 (HTTP ${res.status})`);
   }
