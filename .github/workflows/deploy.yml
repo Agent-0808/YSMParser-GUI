@@ -29,10 +29,26 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Get latest YSMParser version
+        id: ysm-version
+        run: |
+          TAG=$(curl -sH "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/OpenYSM/YSMParser/releases/latest | \
+            jq -r '.tag_name')
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "YSMParser version: $TAG"
+          
+          # 下载 wasm 文件到 public 目录
+          mkdir -p public/wasm
+          curl -sL "https://github.com/OpenYSM/YSMParser/releases/download/${TAG}/YSMParser-${TAG#v}-wasm-web.tar.gz" \
+            -o public/wasm/ysm-parser.tar.gz
+          echo "Downloaded wasm file"
+
       - name: Build with Next.js
         run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}
+          NEXT_PUBLIC_YSM_TAG: ${{ steps.ysm-version.outputs.tag }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

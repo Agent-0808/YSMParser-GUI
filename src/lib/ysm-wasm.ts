@@ -59,9 +59,13 @@ const tarKey = (tag: string) =>
   `https://ysm-wasm-cache.local/v1/${encodeURIComponent(tag)}.tar.gz`;
 
 async function getLatestTag(signal?: AbortSignal): Promise<string> {
-  // 使用 jsDelivr 代理 GitHub API，绕过速率限制
+  // 优先使用构建时注入的版本（避免运行时 API 调用）
+  const builtTag = process.env.NEXT_PUBLIC_YSM_TAG;
+  if (builtTag) return builtTag;
+
+  // 本地开发时回退到 GitHub API
   const res = await fetch(
-    `https://cdn.jsdelivr.net/gh/api.github.com/repos/${REPO}/releases/latest`,
+    `https://api.github.com/repos/${REPO}/releases/latest`,
     { signal },
   );
   if (!res.ok) {
@@ -133,9 +137,9 @@ async function downloadTarWithProgress(
   onProgress: (loaded: number, total: number | undefined) => void,
   signal?: AbortSignal,
 ): Promise<ArrayBuffer> {
-  // 直接构造下载 URL，绕过 GitHub API 速率限制
-  const downloadUrl = `https://github.com/${REPO}/releases/download/${tag}/YSMParser-${tag.replace(/^v/, "")}-wasm-web.tar.gz`;
-  const res = await fetch(downloadUrl, { signal, redirect: "follow" });
+  // 从本地 public 目录加载（构建时已预下载）
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const res = await fetch(`${basePath}/wasm/ysm-parser.tar.gz`, { signal });
   if (!res.ok || !res.body) {
     throw new Error(`下载失败 (HTTP ${res.status})`);
   }
