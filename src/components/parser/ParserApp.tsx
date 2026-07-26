@@ -567,7 +567,7 @@ export default function ParserApp() {
                             <Stack spacing={2} sx={{alignItems: "center"}}>
                                 <Box
                                     component="img"
-                                    src="/logo.png"
+                                    src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.png`}
                                     alt=""
                                     sx={{
                                         width: {xs: 140, md: 200},

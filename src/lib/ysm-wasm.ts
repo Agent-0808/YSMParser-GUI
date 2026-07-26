@@ -59,8 +59,9 @@ const tarKey = (tag: string) =>
   `https://ysm-wasm-cache.local/v1/${encodeURIComponent(tag)}.tar.gz`;
 
 async function getLatestTag(signal?: AbortSignal): Promise<string> {
+  // 使用 jsDelivr 代理 GitHub API，绕过速率限制
   const res = await fetch(
-    `https://api.github.com/repos/${REPO}/releases/latest`,
+    `https://cdn.jsdelivr.net/gh/api.github.com/repos/${REPO}/releases/latest`,
     { signal },
   );
   if (!res.ok) {
@@ -132,19 +133,9 @@ async function downloadTarWithProgress(
   onProgress: (loaded: number, total: number | undefined) => void,
   signal?: AbortSignal,
 ): Promise<ArrayBuffer> {
-  // 直接从 GitHub Releases 下载（支持 CORS）
-  const releaseRes = await fetch(
-    `https://api.github.com/repos/${REPO}/releases/tags/${encodeURIComponent(tag)}`,
-    { signal, headers: { Accept: "application/vnd.github+json" } },
-  );
-  if (!releaseRes.ok) {
-    throw new Error(`获取发布信息失败 (HTTP ${releaseRes.status})`);
-  }
-  const release = (await releaseRes.json()) as { assets?: { name: string; browser_download_url: string }[] };
-  const asset = release.assets?.find((a) => /wasm-web.*\.tar\.gz$/.test(a.name));
-  if (!asset) throw new Error("未找到 wasm-web 资源");
-
-  const res = await fetch(asset.browser_download_url, { signal, redirect: "follow" });
+  // 直接构造下载 URL，绕过 GitHub API 速率限制
+  const downloadUrl = `https://github.com/${REPO}/releases/download/${tag}/YSMParser-${tag.replace(/^v/, "")}-wasm-web.tar.gz`;
+  const res = await fetch(downloadUrl, { signal, redirect: "follow" });
   if (!res.ok || !res.body) {
     throw new Error(`下载失败 (HTTP ${res.status})`);
   }
